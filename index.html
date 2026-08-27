@@ -2,45 +2,36 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>البث المباشر</title>
   <style>
-    body {
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
       margin: 0;
       padding: 0;
+      width: 100vw;
+      height: 100vh;
       background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      overflow: hidden; /* منع التمرير نهائياً */
     }
-    .video-container {
-      position: relative;
-      width: 100%;
-      max-width: 900px;
-      padding-bottom: 56.25%; /* نسبة أبعاد 16:9 */
-      height: 0;
-      overflow: hidden;
-    }
-    .video-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+    iframe {
+      width: 100vw;
+      height: 100vh;
       border: 0;
+      display: block;
     }
   </style>
 </head>
 <body>
 
-  <div class="video-container">
-    <iframe 
-      src="https://tv.alfajertv.com/?channel=fajer1" 
-      allowfullscreen="true" 
-      scrolling="no">
-    </iframe>
-  </div>
+  <iframe 
+    src="https://tv.alfajertv.com/?channel=fajer1" 
+    allow="autoplay; fullscreen"
+    allowfullscreen="true" 
+    scrolling="no">
+  </iframe>
 
 </body>
 </html>
