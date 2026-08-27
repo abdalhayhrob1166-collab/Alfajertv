@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تلفزيون الفجر - البث المباشر</title>
-    
-    <!-- Plyr CSS -->
     <link href="https://cdn.plyr.io/3.7.8/plyr.css" rel="stylesheet">
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -68,7 +65,6 @@
             border-radius: 8px;
             z-index: 10;
             text-align: center;
-            display: none;
             border: 1px solid rgba(255,255,255,0.1);
         }
         #loading-indicator .icon {
@@ -95,20 +91,38 @@
         .footer a:hover {
             color: #fff;
         }
-        /* Plyr custom colors */
-        .plyr--video .plyr__control.plyr__tab-focus,
-        .plyr--video .plyr__control:hover,
-        .plyr--video .plyr__control[aria-expanded=true] { background: #73266e !important; }
-        .plyr__control--overlaid { background: rgba(115, 38, 110, 0.8) !important; }
-        .plyr--full-ui input[type=range] { color: #73266e !important; }
-        .plyr__progress__buffer { color: rgba(115, 38, 110, 0.25) !important; }
-        .plyr--video .plyr__progress__buffer { background: rgba(115, 38, 110, 0.25) !important; }
-        .plyr__time,
-        .plyr__time--current,
-        .plyr__time--duration { color: #ffffff !important; }
-        .plyr--full-ui.plyr--video .plyr__controls { background: linear-gradient(transparent, rgba(0, 0, 0, 0.7)); }
-        .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before { background: #73266e !important; }
-
+        .channel-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .channel-btn {
+            background: linear-gradient(145deg, #21262d 0%, #161b22 100%);
+            border: 2px solid #30363d;
+            color: #c9d1d9;
+            padding: 8px 20px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        .channel-btn:hover {
+            background: linear-gradient(145deg, #430d45 0%, #2e0931 100%);
+            border-color: #430d45;
+            color: #fff;
+        }
+        .channel-btn.active {
+            background: linear-gradient(145deg, #430d45 0%, #2e0931 100%);
+            border-color: #6b1a6e;
+            box-shadow: 0 0 25px rgba(67, 13, 69, 0.6);
+            color: #fff;
+        }
         @media (max-width: 768px) {
             body { padding: 10px; }
             .player-header { font-size: 1.1em; padding: 12px; }
@@ -116,9 +130,9 @@
         @media (max-width: 480px) {
             body { padding: 5px; }
             .player-header { font-size: 0.95em; padding: 10px; }
+            .channel-btn { padding: 6px 12px; font-size: 0.8em; }
             #loading-indicator { font-size: 1em; padding: 14px 22px; }
         }
-
         /* Fullscreen fixes */
         #player-container:fullscreen,
         #player-container:-webkit-full-screen,
@@ -182,120 +196,88 @@
         <div id="player-container">
             <div id="loading-indicator">
                 <div class="icon">⏳</div>
-                <div id="loading-text">جاري تحميل البث...</div>
+                <div id="status-text">جاري تحميل البث...</div>
                 <div class="sub">الرجاء الانتظار</div>
             </div>
             <video id="player" playsinline></video>
+        </div>
+        <div class="channel-selector">
+            <button class="channel-btn active" data-channel="fajer1">الفجر 1</button>
+            <button class="channel-btn" data-channel="fajer2">الفجر 2</button>
+            <button class="channel-btn" data-channel="fajer3">الفجر 3</button>
+            <button class="channel-btn" data-channel="fajer4">الفجر 4</button>
+            <button class="channel-btn" data-channel="fajer5">الفجر 5</button>
         </div>
         <div class="footer">
             &copy; 2025 تلفزيون الفجر - <a href="https://alfajertv.com" target="_blank">alfajertv.com</a>
         </div>
     </div>
 
-    <!-- Plyr & HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 
     <script>
         (function() {
-            console.log('[STREAM] تشغيل البث المباشر - مشغل Plyr + HLS');
+            console.log('[STREAM] بدء التشغيل مع الرابط المباشر...');
 
             // ============================================================
-            // 1. روابط البث الافتراضية (في حال فشل جلب الرابط من API)
+            // 🔴 الروابط المباشرة (تم استخراجها من الموقع)
             // ============================================================
-            const DEFAULT_STREAMS = {
-                'fajer1': 'https://edge1.alfajertv.com/live/fajer1/playlist.m3u8',
-                'fajer1-hd': 'https://edge1.alfajertv.com/live/fajer1-hd/playlist.m3u8',
-                'fajer2': 'https://edge1.alfajertv.com/live/fajer2/playlist.m3u8',
-                'fajer3': 'https://edge1.alfajertv.com/live/fajer3/playlist.m3u8',
-                'fajer4': 'https://edge1.alfajertv.com/live/fajer4/playlist.m3u8',
-                'fajer5': 'https://edge1.alfajertv.com/live/fajer5/playlist.m3u8'
+            const STREAMS = {
+                'fajer1': 'https://vstream4.hadara.ps:8443/AlfajertvHD1_web/web/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9OC8yNy8yMDI2IDc6MDI6MjYgQU0maGFzaF92YWx1ZT1qSTlRKzJHeVVJNjZxZ2NMZWdrWHFnPT0mdmFsaWRtaW51dGVzPTE4MCZpZD11bTI5dXNwcmZzZ2UwdWwwbTE0aHUycTRkaA==',
+                'fajer2': 'https://vstream4.hadara.ps:8443/AlfajertvHD2_web/web/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9OC8yNy8yMDI2IDc6MDI6MjYgQU0maGFzaF92YWx1ZT1qSTlRKzJHeVVJNjZxZ2NMZWdrWHFnPT0mdmFsaWRtaW51dGVzPTE4MCZpZD11bTI5dXNwcmZzZ2UwdWwwbTE0aHUycTRkaA==',
+                'fajer3': 'https://vstream4.hadara.ps:8443/AlfajertvHD3_web/web/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9OC8yNy8yMDI2IDc6MDI6MjYgQU0maGFzaF92YWx1ZT1qSTlRKzJHeVVJNjZxZ2NMZWdrWHFnPT0mdmFsaWRtaW51dGVzPTE4MCZpZD11bTI5dXNwcmZzZ2UwdWwwbTE0aHUycTRkaA==',
+                'fajer4': 'https://vstream4.hadara.ps:8443/AlfajertvHD4_web/web/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9OC8yNy8yMDI2IDc6MDI6MjYgQU0maGFzaF92YWx1ZT1qSTlRKzJHeVVJNjZxZ2NMZWdrWHFnPT0mdmFsaWRtaW51dGVzPTE4MCZpZD11bTI5dXNwcmZzZ2UwdWwwbTE0aHUycTRkaA==',
+                'fajer5': 'https://vstream4.hadara.ps:8443/AlfajertvHD5_web/web/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9OC8yNy8yMDI2IDc6MDI6MjYgQU0maGFzaF92YWx1ZT1qSTlRKzJHeVVJNjZxZ2NMZWdrWHFnPT0mdmFsaWRtaW51dGVzPTE4MCZpZD11bTI5dXNwcmZzZ2UwdWwwbTE0aHUycTRkaA=='
             };
 
-            const CHANNEL = 'fajer1';
+            let currentChannel = 'fajer1';
             let hls = null;
             let player = null;
-            let playerInitialized = false;
-            let streamUrl = null;
+            let isPlaying = false;
+            let retryCount = 0;
+            const MAX_RETRIES = 3;
 
             const videoEl = document.getElementById('player');
             const loadingEl = document.getElementById('loading-indicator');
-            const loadingText = document.getElementById('loading-text');
+            const statusText = document.getElementById('status-text');
 
             // ============================================================
-            // 2. جلب الرابط من API (نفس طريقة الموقع الأصلي)
-            // ============================================================
-            function getStreamUrlFromApi(channel) {
-                return fetch(`api/get-stream.php?t=${Date.now()}`, {
-                    credentials: 'include',
-                    cache: 'no-store'
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.json();
-                })
-                .then(data => {
-                    if (data.success && data.streams && data.streams[channel]) {
-                        return data.streams[channel];
-                    }
-                    throw new Error('لا يوجد رابط للقناة في API');
-                });
-            }
-
-            // ============================================================
-            // 3. الحصول على الرابط (API أولاً، ثم الرابط الافتراضي)
-            // ============================================================
-            async function getStreamUrl(channel) {
-                try {
-                    // محاولة جلب الرابط من API
-                    const apiUrl = await getStreamUrlFromApi(channel);
-                    console.log('[STREAM] تم جلب الرابط من API:', apiUrl);
-                    return apiUrl;
-                } catch (apiError) {
-                    console.warn('[STREAM] فشل جلب الرابط من API:', apiError.message);
-                    
-                    // استخدام الرابط الافتراضي
-                    if (DEFAULT_STREAMS[channel]) {
-                        console.log('[STREAM] استخدام الرابط الافتراضي:', DEFAULT_STREAMS[channel]);
-                        return DEFAULT_STREAMS[channel];
-                    }
-                    
-                    throw new Error('لا يوجد رابط متاح للقناة ' + channel);
-                }
-            }
-
-            // ============================================================
-            // 4. تهيئة المشغل
+            // 1. تهيئة المشغل
             // ============================================================
             function initPlayer(url) {
-                if (playerInitialized) {
-                    // تحديث المصدر إذا كان المشغل موجوداً بالفعل
-                    if (hls && typeof hls.loadSource === 'function') {
-                        hls.loadSource(url);
-                        hls.startLoad();
-                    }
-                    loadingEl.style.display = 'none';
-                    return;
-                }
+                console.log('[STREAM] تحميل الرابط:', url.substring(0, 100) + '...');
 
-                console.log('[STREAM] تهيئة المشغل...');
-                streamUrl = url;
+                loadingEl.style.display = 'block';
+                statusText.textContent = 'جاري تحميل البث...';
 
                 if (Hls.isSupported()) {
+                    if (hls) {
+                        hls.destroy();
+                        hls = null;
+                    }
+
                     hls = new Hls({
                         enableWorker: true,
                         lowLatencyMode: false,
                         liveSyncDurationCount: 8,
                         maxBufferLength: 60,
-                        backBufferLength: 90
+                        backBufferLength: 90,
+                        // إضافة رؤوس إضافية
+                        xhrSetup: function(xhr, url) {
+                            xhr.setRequestHeader('Referer', 'https://tv.alfajertv.com/');
+                            xhr.setRequestHeader('Origin', 'https://tv.alfajertv.com');
+                            xhr.withCredentials = true;
+                        }
                     });
 
                     hls.loadSource(url);
                     hls.attachMedia(videoEl);
 
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                        console.log('[STREAM] تم تحميل البث بنجاح');
+                        console.log('[STREAM] ✅ تم تحميل البث بنجاح');
                         loadingEl.style.display = 'none';
+                        retryCount = 0;
 
                         if (!player) {
                             player = new Plyr(videoEl, {
@@ -303,6 +285,7 @@
                                 autoplay: true,
                                 hideControls: true
                             });
+                            isPlaying = true;
 
                             // أحداث fullscreen
                             player.on('enterfullscreen', () => {
@@ -338,139 +321,130 @@
                                     container.style.padding = '';
                                 }
                             });
-
-                            playerInitialized = true;
                         }
 
-                        videoEl.play().catch(e => console.warn('[STREAM] تشغيل تلقائي غير مسموح:', e.message));
+                        videoEl.play().catch(e => {
+                            console.warn('[STREAM] تشغيل تلقائي غير مسموح:', e.message);
+                            // محاولة التشغيل عند تفاعل المستخدم
+                            document.addEventListener('click', function playOnClick() {
+                                videoEl.play().catch(() => {});
+                                document.removeEventListener('click', playOnClick);
+                            }, { once: true });
+                        });
                     });
 
                     hls.on(Hls.Events.ERROR, function(event, data) {
-                        console.error('[STREAM] خطأ في البث:', data);
+                        console.error('[STREAM] ❌ خطأ:', data);
+                        
                         if (data.fatal) {
                             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                                console.log('[STREAM] محاولة إعادة الاتصال...');
-                                hls.startLoad();
+                                if (retryCount < MAX_RETRIES) {
+                                    retryCount++;
+                                    statusText.textContent = `جاري إعادة المحاولة (${retryCount}/${MAX_RETRIES})...`;
+                                    console.log(`[STREAM] محاولة إعادة الاتصال (${retryCount}/${MAX_RETRIES})`);
+                                    setTimeout(() => {
+                                        hls.startLoad();
+                                    }, 3000 * retryCount);
+                                } else {
+                                    showError('تعذر تحميل البث - تأكد من اتصالك بالإنترنت');
+                                }
                             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
                                 hls.recoverMediaError();
                             } else {
                                 hls.destroy();
                                 showError('تعذر تحميل البث - حاول لاحقاً');
-                                console.error('[STREAM] فشل البث بشكل نهائي');
                             }
                         }
                     });
 
                 } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-                    // Safari native HLS
+                    // Safari
                     videoEl.src = url;
-                    player = new Plyr(videoEl, {
-                        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
-                        autoplay: true,
-                        hideControls: true
-                    });
-                    playerInitialized = true;
+                    if (!player) {
+                        player = new Plyr(videoEl, {
+                            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+                            autoplay: true,
+                            hideControls: true
+                        });
+                        isPlaying = true;
+                    }
                     loadingEl.style.display = 'none';
                     videoEl.play().catch(e => console.warn('[STREAM] تشغيل تلقائي غير مسموح:', e.message));
                 } else {
                     showError('المتصفح لا يدعم تشغيل البث المباشر');
-                    console.error('[STREAM] HLS غير مدعوم');
-                }
-
-                // أحداث fullscreen العامة
-                document.addEventListener('fullscreenchange', () => {
-                    if (!document.fullscreenElement) {
-                        resetContainerStyles();
-                    }
-                });
-                document.addEventListener('webkitfullscreenchange', () => {
-                    if (!document.webkitFullscreenElement) {
-                        resetContainerStyles();
-                    }
-                });
-            }
-
-            function resetContainerStyles() {
-                const container = document.getElementById('player-container');
-                if (container) {
-                    container.style.position = '';
-                    container.style.top = '';
-                    container.style.left = '';
-                    container.style.right = '';
-                    container.style.bottom = '';
-                    container.style.width = '';
-                    container.style.height = '';
-                    container.style.aspectRatio = '';
-                    container.style.margin = '';
-                    container.style.padding = '';
                 }
             }
 
             // ============================================================
-            // 5. عرض رسائل الخطأ
+            // 2. عرض رسائل الخطأ
             // ============================================================
             function showError(message) {
                 loadingEl.innerHTML = `
                     <div class="icon">⚠️</div>
                     <div>${message}</div>
-                    <div class="sub">حاول التحديث أو استخدم مشغل آخر</div>
+                    <div class="sub">حاول تحديث الصفحة أو استخدم مشغل آخر</div>
+                    <button onclick="location.reload()" style="margin-top:15px;padding:8px 20px;background:#430d45;border:none;color:#fff;border-radius:5px;cursor:pointer;font-size:0.9em;">إعادة المحاولة</button>
                 `;
                 loadingEl.style.display = 'block';
+                statusText.textContent = message;
             }
 
             // ============================================================
-            // 6. البدء
+            // 3. تبديل القناة
             // ============================================================
-            async function start() {
-                loadingEl.style.display = 'block';
-                loadingText.textContent = 'جاري تحميل البث...';
-
-                try {
-                    const url = await getStreamUrl(CHANNEL);
-                    if (url) {
-                        initPlayer(url);
-                    } else {
-                        showError('تعذر تحميل البث');
-                    }
-                } catch (error) {
-                    console.error('[STREAM] فشل جلب الرابط:', error);
-                    
-                    // محاولة استخدام الرابط الافتراضي مباشرة
-                    if (DEFAULT_STREAMS[CHANNEL]) {
-                        console.log('[STREAM] محاولة استخدام الرابط الافتراضي:', DEFAULT_STREAMS[CHANNEL]);
-                        initPlayer(DEFAULT_STREAMS[CHANNEL]);
-                    } else {
-                        showError('تعذر تحميل البث - تأكد من اتصالك بالإنترنت');
-                    }
+            function switchChannel(channel) {
+                if (channel === currentChannel && isPlaying) {
+                    console.log('[STREAM] القناة نفسها، لا حاجة للتبديل');
+                    return;
                 }
-            }
 
-            // ============================================================
-            // 7. إعادة المحاولة عند الفشل
-            // ============================================================
-            let retryCount = 0;
-            const MAX_RETRIES = 3;
+                currentChannel = channel;
+                console.log('[STREAM] تبديل إلى القناة:', channel);
 
-            function retryWithDelay() {
-                if (retryCount < MAX_RETRIES) {
-                    retryCount++;
-                    console.log(`[STREAM] محاولة إعادة الاتصال (${retryCount}/${MAX_RETRIES})...`);
-                    loadingText.textContent = `جاري إعادة المحاولة (${retryCount}/${MAX_RETRIES})...`;
-                    setTimeout(start, 3000 * retryCount);
-                } else {
-                    showError('تعذر تحميل البث بعد عدة محاولات');
+                document.querySelectorAll('.channel-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.channel === channel);
+                });
+
+                let url = STREAMS[channel];
+                if (!url) {
+                    showError('لا يوجد رابط لهذه القناة');
+                    return;
                 }
+
+                retryCount = 0;
+                initPlayer(url);
             }
 
             // ============================================================
-            // 8. تشغيل
+            // 4. بدء التشغيل
+            // ============================================================
+            function start() {
+                const url = STREAMS[currentChannel];
+                if (!url) {
+                    showError('لا يوجد رابط للقناة المحددة');
+                    return;
+                }
+                initPlayer(url);
+            }
+
+            // ============================================================
+            // 5. إعداد الأزرار
+            // ============================================================
+            document.querySelectorAll('.channel-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchChannel(this.dataset.channel);
+                });
+            });
+
+            // ============================================================
+            // 6. بدء التشغيل
             // ============================================================
             start();
 
             // إعادة المحاولة عند فقدان الاتصال
             window.addEventListener('online', () => {
-                console.log('[STREAM] تم استعادة الاتصال بالإنترنت');
-                if (!playerInitialized || !streamUrl) {
+                console.log('[STREAM] استعادة الاتصال، إعادة المحاولة...');
+                if (!isPlaying) {
                     retryCount = 0;
                     start();
                 }
