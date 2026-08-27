@@ -2,8 +2,11 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>البث المباشر</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>البث المباشر - الفجر 1</title>
+  <!-- مكتبة تشغيل فيديو HLS -->
+  <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+  <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -16,33 +19,32 @@
       background-color: #000;
       overflow: hidden;
     }
-    .stream-wrapper {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .stream-wrapper iframe {
-      position: absolute;
-      /* إزاحة لإخفاء الشريط العلوي وشريط التنقل الخاص بموقع المصدر */
-      top: -50px; 
-      left: 0;
-      width: 100vw;
-      height: calc(100vh + 50px);
-      border: 0;
+    .video-js {
+      width: 100vw !important;
+      height: 100vh !important;
     }
   </style>
 </head>
 <body>
 
-  <div class="stream-wrapper">
-    <iframe 
-      src="https://tv.alfajertv.com/?channel=fajer1" 
-      allow="autoplay; fullscreen"
-      allowfullscreen="true" 
-      scrolling="no">
-    </iframe>
-  </div>
+  <video 
+    id="live-stream" 
+    class="video-js vjs-default-skin vjs-big-play-centered" 
+    controls 
+    autoplay 
+    preload="auto" 
+    playsinline>
+    <!-- رابط سيرفر البث المباشر لقناة الفجر -->
+    <source src="https://stream.alfajertv.com/fajer1/live/playlist.m3u8" type="application/x-mpegURL">
+    متصفحك لا يدعم تشغيل هذا البث.
+  </video>
+
+  <script>
+    var player = videojs('live-stream');
+    player.ready(function() {
+      player.play();
+    });
+  </script>
 
 </body>
 </html>
